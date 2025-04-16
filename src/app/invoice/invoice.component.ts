@@ -14,6 +14,7 @@ import * as XLSX from 'xlsx';
 import { main } from '@popperjs/core';
 import { PdfService } from '../shared/pdf.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-invoice-test',
@@ -113,6 +114,7 @@ export class InvoiceComponent {
   // pdfUrl: string | null = null;
   pdfUrl: SafeResourceUrl | null = null;
   constructor(
+    private http: HttpClient,
     private pdfService: PdfService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
@@ -132,46 +134,120 @@ export class InvoiceComponent {
     console.log(this.documentNumber, this.itemNumber, this.customerId, this.currency);
   }
 
-  generatePDF() {
-    // Convert data to XML
-    const xmlData = this.convertToXML(this.mainItemsRecords);
-    console.log(xmlData); 
-    this.pdfService.populatePDF(xmlData).subscribe((pdfBlob) => {
-      const url = window.URL.createObjectURL(pdfBlob);
-      this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url); // Trust the URL
-      console.log(this.pdfUrl);
+  // generatePDF() {
+  //   // Convert data to XML
+  //   const xmlData = this.convertToXML(this.mainItemsRecords);
+  //   console.log(xmlData); 
+  //   this.pdfService.populatePDF(xmlData).subscribe((pdfBlob) => {
+  //     const url = window.URL.createObjectURL(pdfBlob);
+  //     this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url); // Trust the URL
+  //     console.log(this.pdfUrl);
       
-      window.open(url, '_blank'); // Opens in a new tab
+  //     window.open(url, '_blank'); // Opens in a new tab
 
-    });
+  //   });
 
-  }
-  convertToXML(mainItems: MainItem[]): string {
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    xml += `<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">\n`; // ✅ XFA Wrapper
-    xml += `  <xfa:data>\n`; // ✅ Required for XFA PDFs
-    xml += `    <TableData>\n`;
-    // xml += `<TableData xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/">\n`;
-    xml += `  <form1>\n`;  // Matches XSD
-    xml += `    <table>\n`; // Matches XSD
+  // }
+  // convertToXML(mainItems: MainItem[]): string {
+  //   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  //   xml += `<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">\n`; // ✅ XFA Wrapper
+  //   xml += `  <xfa:data>\n`; // ✅ Required for XFA PDFs
+  //   xml += `    <TableData>\n`;
+  //   // xml += `<TableData xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/">\n`;
+  //   xml += `  <form1>\n`;  // Matches XSD
+  //   xml += `    <table>\n`; // Matches XSD
 
-    mainItems.forEach(item => {
-      xml += `      <row>\n`;  // Matches XSD `row`
-      xml += `        <description>${item.description}</description>\n`;
-      xml += `        <quantity>${Math.floor(item.quantity ? item.quantity : 0)}</quantity>\n`;
-      xml += `        <unitOfMeasurementCode>${item.unitOfMeasurementCode}</unitOfMeasurementCode>\n`;
-      xml += `      </row>\n`;
-    });
+  //   mainItems.forEach(item => {
+  //     xml += `      <row>\n`;  // Matches XSD `row`
+  //     xml += `        <description>${item.description}</description>\n`;
+  //     xml += `        <quantity>${Math.floor(item.quantity ? item.quantity : 0)}</quantity>\n`;
+  //     xml += `        <unitOfMeasurementCode>${item.unitOfMeasurementCode}</unitOfMeasurementCode>\n`;
+  //     xml += `      </row>\n`;
+  //   });
 
-    xml += `    </table>\n`; 
-    xml += `  </form1>\n`;   
-    xml += `</TableData>\n`;  
+  //   xml += `    </table>\n`; 
+  //   xml += `  </form1>\n`;   
+  //   xml += `</TableData>\n`;  
 
-    xml += `  </xfa:data>\n`; // ✅ XFA Closing
-    xml += `</xdp:xdp>\n`; // ✅ XFA Closing
+  //   xml += `  </xfa:data>\n`; // ✅ XFA Closing
+  //   xml += `</xdp:xdp>\n`; // ✅ XFA Closing
 
 
-    return xml;
+  //   return xml;
+  // }
+
+
+  // printToPDF() {
+  //   const filteredData = this.mainItemsRecords.map(item => ({
+  //     description: item.description,
+  //     quantity: item.quantity,
+  //     unitOfMeasurementCode: item.unitOfMeasurementCode,
+  //   })); 
+  //   const payload = { tableData: filteredData };
+  //   this.http
+  //     .post('http://localhost:3000/api/printPDF', payload, {
+  //       responseType: 'blob', // Expect PDF binary
+  //     })
+  //     .subscribe(
+  //       (response: Blob) => {
+  //         console.log(response);
+          
+  //         // Trigger download
+  //         const url = window.URL.createObjectURL(response);
+  //         const link = document.createElement('a');
+  //         console.log("url",url);
+  //         console.log("link",link);
+  //         link.href = url;
+  //         link.download = 'table-data.pdf';
+  //         link.click();
+  //         window.URL.revokeObjectURL(url);
+  //       },
+  //       (error) => {
+  //         console.error('Error:', error);
+  //         alert('Failed to generate PDF');
+  //       }
+  //     );
+  // }
+
+  printToPDF() {
+    const filteredData = this.mainItemsRecords.map(item => ({
+      description: item.description,
+      quantity: item.quantity,
+      unitOfMeasurementCode: item.unitOfMeasurementCode,
+    }));
+
+    const payload = { tableData: filteredData };
+
+    this.http
+      .post('https://forms-app-node.cfapps.eu10-004.hana.ondemand.com/api/printPDF', payload, {
+        responseType: 'blob',
+        observe: 'response',
+      })
+      .subscribe(
+        (response) => {
+          const contentType = response.headers.get('content-type');
+          if (contentType !== 'application/pdf') {
+            response?.body?.text().then((errorText) => {
+              console.error('Error response from backend:', errorText);
+              alert('Failed to generate PDF: ' + errorText);
+            });
+            return;
+          }
+
+          if(response?.body){
+          const url = window.URL.createObjectURL(response?.body);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'table-data.pdf';
+          link.click();
+          window.URL.revokeObjectURL(url);
+          }
+        },
+        (error) => {
+          console.error('Error:', error);
+          alert('Failed to generate PDF');
+        }
+      );
   }
 
 

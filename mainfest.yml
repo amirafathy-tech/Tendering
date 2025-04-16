@@ -1,11 +1,9 @@
 applications:
-- name: tendering-dev
+- name: tendering-forms
   instances: 1
   memory: 512MB
   buildpack: staticfile_buildpack
   path: dist/btp-sd-app
-  services:
-      - name: nodeuaa
 
   env:
-      TENANT_HOST_PATTERN: '^(.*)\\.cf.eu10-004.hana.ondemand.com\.com$'
+      TENANT_HOST_PATTERN: '^(.*)\\.cf.us10-001.hana.ondemand.com\.com$'

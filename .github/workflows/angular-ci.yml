@@ -1,0 +1,46 @@
+name: Angular CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Build Angular app
+        run: npx ng build --configuration production
+
+      - name: Install Cloud Foundry CLI
+        run: |
+          choco install cloudfoundry-cli -y
+          cf --version
+        shell: powershell
+
+      - name: Login to Cloud Foundry
+        run: |
+          $api = "${{ secrets.CF_API }}".Trim()
+          echo "Logging in with API: $api, Org: ${{ secrets.CF_ORG }}, Space: ${{ secrets.CF_SPACE }}"
+          cf login -a $api -u "${{ secrets.CF_USERNAME }}" -p "${{ secrets.CF_PASSWORD }}" -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
+        shell: powershell
+
+      - name: Deploy to SAP BTP Cloud Foundry
+        run: |  
+          cd dist/btp-sd-app
+          cf push -f ../../mainfest.yml
+        shell: powershell
