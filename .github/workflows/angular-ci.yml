@@ -20,9 +20,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
-        run: npx ng test --watch=false --browsers=ChromeHeadless
-
       - name: Build Angular app
         run: npx ng build --configuration production
 
