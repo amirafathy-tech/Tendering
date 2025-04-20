@@ -176,7 +176,7 @@ export class InvoiceComponent {
   //   return xml;
   // }
 
-
+// worked 
   // printToPDF() {
   //   const filteredData = this.mainItemsRecords.map(item => ({
   //     description: item.description,
@@ -198,7 +198,7 @@ export class InvoiceComponent {
   //         console.log("url",url);
   //         console.log("link",link);
   //         link.href = url;
-  //         link.download = 'table-data.pdf';
+  //         link.download = 'PDFOut.pdf';
   //         link.click();
   //         window.URL.revokeObjectURL(url);
   //       },
@@ -209,39 +209,52 @@ export class InvoiceComponent {
   //     );
   // }
 
+  // new with format 
   printToPDF() {
     const filteredData = this.mainItemsRecords.map(item => ({
       description: item.description,
       quantity: item.quantity,
       unitOfMeasurementCode: item.unitOfMeasurementCode,
     }));
-
     const payload = { tableData: filteredData };
-
+    console.log(payload);
+    
+  
     this.http
-      .post('https://forms-app-node.cfapps.eu10-004.hana.ondemand.com/api/printPDF', payload, {
-        responseType: 'blob',
-        observe: 'response',
+      .post('http://localhost:3000/api/printPDF', payload, {
+        responseType: 'json', // Expect JSON response
       })
       .subscribe(
-        (response) => {
-          const contentType = response.headers.get('content-type');
-          if (contentType !== 'application/pdf') {
-            response?.body?.text().then((errorText) => {
-              console.error('Error response from backend:', errorText);
-              alert('Failed to generate PDF: ' + errorText);
-            });
-            return;
+        (response: any) => {
+          // Ensure the response has the expected structure
+          if (!response.fileName || !response.fileContent) {
+            throw new Error('Invalid response format: fileName or fileContent missing');
           }
-
-          if(response?.body){
-          const url = window.URL.createObjectURL(response?.body);
+  
+          // Decode Base64 fileContent to a binary string
+          const binaryString = atob(response.fileContent);
+          
+          // Convert binary string to a byte array
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+  
+          // Create a Blob from the byte array
+          const blob = new Blob([bytes], { type: 'application/pdf' });
+  
+          // Trigger download
+          const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = 'table-data.pdf';
+          link.download = response.fileName || 'PDFOut.pdf'; // Use fileName from response
           link.click();
           window.URL.revokeObjectURL(url);
-          }
+  
+          // Optionally display the PDF in a new tab
+          const displayUrl = window.URL.createObjectURL(blob);
+          window.open(displayUrl, '_blank'); // Open PDF in a new tab
+          // Note: If you want to embed the PDF in the page instead, see Step 2 below
         },
         (error) => {
           console.error('Error:', error);
@@ -249,6 +262,48 @@ export class InvoiceComponent {
         }
       );
   }
+
+  // printToPDF() {
+  //   const filteredData = this.mainItemsRecords.map(item => ({
+  //     description: item.description,
+  //     quantity: item.quantity,
+  //     unitOfMeasurementCode: item.unitOfMeasurementCode,
+  //   }));
+
+  //   const payload = { tableData: filteredData };
+
+  //   this.http
+  //   //https://forms-app-node.cfapps.eu10-004.hana.ondemand.com
+  //     .post('http://localhost:3000/api/printPDF', payload, {
+  //       responseType: 'blob',
+  //       observe: 'response',
+  //     })
+  //     .subscribe(
+  //       (response) => {
+  //         const contentType = response.headers.get('content-type');
+  //         if (contentType !== 'application/pdf') {
+  //           response?.body?.text().then((errorText) => {
+  //             console.error('Error response from backend:', errorText);
+  //             alert('Failed to generate PDF: ' + errorText);
+  //           });
+  //           return;
+  //         }
+
+  //         if(response?.body){
+  //         const url = window.URL.createObjectURL(response?.body);
+  //         const link = document.createElement('a');
+  //         link.href = url;
+  //         link.download = 'table-data.pdf';
+  //         link.click();
+  //         window.URL.revokeObjectURL(url);
+  //         }
+  //       },
+  //       (error) => {
+  //         console.error('Error:', error);
+  //         alert('Failed to generate PDF');
+  //       }
+  //     );
+  // }
 
 
 
